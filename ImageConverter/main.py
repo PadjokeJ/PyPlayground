@@ -1,20 +1,28 @@
 from PIL import Image
 from copy import copy
-from random import randint
+from random import randint, shuffle
 from math import *
+import os
 print("opening image")
 img = Image.open("image.png")
-print("choose scale (300 gives best result)")
+print("choose image scale (0 - 1)")
 a = input("int:")
-i = int(a)
+i = float(a)
 print("compressing")
-img = img.resize((i * 3, i * 4))
+size = img.size
+img = img.resize((int(i * size[0]), int(i * size[1])))
 size = width, height = img.size
 print("getting ready")
 pixels = img.load()
-print ("enter conversion mode \n(lines, that, flip, red, noise, deflate, uv, aa)")
-a = input("mode:")
-if a == "lines" or a == "1" or a == "2":
+try:
+    dir = "images/"
+    os.mkdir("images")
+except:
+    dir = "images/"
+
+# ----------------- DEFINITIONS ----------------- 
+
+def lines():
     for row in range(height):
         print(str(int(100*row/height)) + "%")
         step = 0
@@ -26,7 +34,8 @@ if a == "lines" or a == "1" or a == "2":
                 pixels[pix - 1, row] = (0, p[1], 0)
                 pixels[pix, row] = (0, 0, p[2])
                 step = 0
-if a== "flip":
+
+def flip():
     print("initialising")
     img2 = copy(img)
     print("duplicating pixels")
@@ -36,7 +45,8 @@ if a== "flip":
         for x in range(width):
             p = pixels2[x, row]
             pixels[x, height - row - 1] = (p[0], p[1], p[2])
-if a== "that" or a == "1":
+
+def round():
     print("choose steps")
     b = input("int:")
     i = int(b)
@@ -46,7 +56,8 @@ if a== "that" or a == "1":
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (int(p[0]/i)*i, int(p[1]/i)*i, int(p[2]/i)*i)
-if a== "red":
+
+def redify():
     print("choose bg")
     b = input("int:")
     i = int(b)
@@ -56,14 +67,16 @@ if a== "red":
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (p[0], i, i)
-if a== "noise":
+
+def noisify():
     print("starting")
     for row in range(height):
         print(str(int(100*row/height)) + "%")
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (p[0], randint(0, 255), randint(0, 255))
-if a== "deflate":
+
+def deflate():
     print("enter scale (the higher, the less the effect shows)")
     a = input("int:")
     i = int(a)
@@ -73,14 +86,16 @@ if a== "deflate":
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (int((p[0] * i + p[1] + p[2])/(2 + i)), int((p[0] + p[1] * i + p[2])/(2 + i)), int((p[0] + p[1] + p[2] * i)/(2 + i)))
-if a== "uv" or a == "2":
+
+def uv():
     print("starting")
     for row in range(height):
         print(str(int(100*row/height)) + "%")
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (int((x/width)*255), p[1], int((row/height)*255))
-if a== "aa":
+
+def antialiasing():
     print("starting")
     for row in range(height):
         print(str(int(100*row/height)) + "%")
@@ -90,7 +105,8 @@ if a== "aa":
                 p2 = pixels[x-1, row]
                 p3 = pixels[x-2, row]
                 pixels[x, row] = (int((pixels[x, row][0] + pixels[x - 1, row][0] + pixels[x - 2, row][0])/3), int((pixels[x, row][1] + pixels[x - 1, row][1] + pixels[x - 2, row][1])/3), int((pixels[x, row][2] + pixels[x - 1, row][2] + pixels[x - 2, row][2])/3))
-if a== "hot":
+
+def hot():
     print("enter value")
     b = input("int:")
     i = int(b)
@@ -100,7 +116,8 @@ if a== "hot":
         for x in range(width):
             p = pixels[x, row]
             pixels[x, row] = (max(min(p[0] + i, 255), 0), p[1], p[2])
-if a== "greener":
+
+def greenify():
     print("enter value")
     b = input("int:")
     i = int(b)
@@ -111,7 +128,7 @@ if a== "greener":
             p = pixels[x, row]
             pixels[x, row] = (p[0], max(min(p[1] + i, 255), 0), p[2])
 
-if a== "cold":
+def cold():
     print("enter value")
     b = input("int:")
     i = int(b)
@@ -122,7 +139,7 @@ if a== "cold":
             p = pixels[x, row]
             pixels[x, row] = (p[0], p[1], max(min(p[2] + i, 255), 0))
 
-if a== "washed":
+def wash():
     print("copying image")
     img2 = copy(img)
     print("loading")
@@ -147,7 +164,8 @@ if a== "washed":
             g = int(g)
             b = int(b)
             pixels[x, row] = (r, g, b)
-if a== "washed2":
+            
+def wash2():
     print("copying image")
     img2 = copy(img)
     print("loading")
@@ -164,7 +182,8 @@ if a== "washed2":
             g += p[1]
             b += p[2]
             pixels[x, row] = (int(r/i), int(g/i), int(b/i))
-if a== "out":
+
+def outline():
     print("copying image")
     img2 = copy(img)
     pix = img2.load()
@@ -184,7 +203,7 @@ if a== "out":
                 p2 = pix[x, row - 1]
                 if abs(p2[0] - p[0]) > i or abs(p2[1] - p[1]) > i or abs(p2[2] - p[2]) > i:
                     pixels[x, row] = (0, 0, 0)
-if a== "ascii":
+def ascii():
     print("loading")
     img = img.convert("L")
     lis = ["..", "-", " i", "o", "a", "m", "0", "M", "#"]
@@ -198,6 +217,97 @@ if a== "ascii":
             p = pixels[x, row]
             print(lis[int(p/30)], end = "")
     print("\n" + str(i))
+    
+def shuffle():
+    pixels = img.load()
+    for y in range(height):
+        _pixels = []
+        for x in range(width):
+            _pixels.append(pixels[x, y])
+        shuffle(_pixels)
+        for x in range(width):
+            pixels[x, y] = _pixels[x]
+    for x in range(width):
+        _pixels = []
+        for y in range(height):
+            _pixels.append(pixels[x, y])
+        shuffle(_pixels)
+        for y in range(width):
+            pixels[x, y] = _pixels[y]
+            
+def sort():
+    pixels = img.load()
+    for y in range(height):
+        _pixels = []
+        for x in range(width):
+            _pixels.append(pixels[x, y])
+        _pixels.sort()
+        for x in range(width):
+            pixels[x, y] = _pixels[x]
+            
+def imgsort():
+    print("enter value")
+    i = int(input("int:"))
+    for y in range(height):
+        _pixels = []
+        inception = []
+        for x in range(width):
+            p = pixels[x, y]
+            inception.append(p)
+            if x > 0:
+                p2 = pixels[x - 1, y]
+                if abs(p2[0] - p[0]) > i or abs(p2[1] - p[1]) > i or abs(p2[2] - p[2]) > i:
+                    inception.sort()
+                    for item in inception:
+                        _pixels.append(item)
+                    inception.clear()
+        inception.sort()
+        for item in inception:
+            _pixels.append(item)
+        for x in range(width):
+            pixels[x, y] = _pixels[x]
+            
+# ----------------- MAIN CODE  ----------------- 
+            
+modes = ["lines", "flip", "round", "red", "green", "sort", "imgsort", "shuffle", "outline", "ascii", "wash", "wash2", "hot", "cold", "antialiasing", "uv", "deflate", "noisify"] 
+iteration = 0
+for mode in modes:
+    print(f"[{iteration}] : {mode}")
+    iteration += 1
+    
+def mode_select():
+    try:
+        type = modes[int(input("mode:"))]
+        return type
+    except:
+        mode_select()
+        
+type = mode_select()
+
+match type:
+    case "lines": lines()
+    case "flip": flip()
+    case "round": round()
+    case "red": redify()
+    case "green": greenify()
+    case "sort": sort()
+    case "imgsort": imgsort()
+    case "shuffle": shuffle()
+    case "outline": outline()
+    case "ascii": ascii()
+    case "wash": wash()
+    case "wash2": wash2()
+    case "cold": cold()
+    case "hot": hot()
+    case "antialiasing": antialiasing()
+    case "uv": uv()
+    case "deflate": deflate()
+    case "noisify": noisify()
+
 print("Saving...")
-img.save("im2.png")
+for root, dirs, files in os.walk("images"):
+    int = len(files) + 1
+    break
+img.save(f"{dir}im{int}.png")
+img.show()
 print("100%")
