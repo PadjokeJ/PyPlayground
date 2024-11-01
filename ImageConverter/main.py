@@ -203,19 +203,27 @@ def outline():
                 p2 = pix[x, row - 1]
                 if abs(p2[0] - p[0]) > i or abs(p2[1] - p[1]) > i or abs(p2[2] - p[2]) > i:
                     pixels[x, row] = (0, 0, 0)
-def ascii():
+def ascii(img):
     print("loading")
     img = img.convert("L")
-    lis = ["..", "-", " i", "o", "a", "m", "0", "M", "#"]
+    lis = [" ", ".", ":", "-", "=", "+", "*", "#", "%", "@"]
     pixels = img.load()
     print("starting")
     i = 0
-    for row in range(height):
+    f = open("ascii_art.txt", "w")
+    txt = ""
+    for row in range(0, height, 2):
+        txt = ""
         print("")
         for x in range(width):
             i += 1
             p = pixels[x, row]
-            print(lis[int(p/30)], end = "")
+            print(lis[int(p//25)], end = "")
+            txt += lis[int(p//25)]
+        
+        f.write(txt + "\n")
+    f.close()
+    
     print("\n" + str(i))
     
 def shuffle():
@@ -294,7 +302,7 @@ match type:
     case "imgsort": imgsort()
     case "shuffle": shuffle()
     case "outline": outline()
-    case "ascii": ascii()
+    case "ascii": ascii(img)
     case "wash": wash()
     case "wash2": wash2()
     case "cold": cold()
@@ -311,3 +319,5 @@ for root, dirs, files in os.walk("images"):
 img.save(f"{dir}im{int}.png")
 img.show()
 print("100%")
+
+exit()

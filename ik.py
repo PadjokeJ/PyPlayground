@@ -13,6 +13,7 @@ height = pygame.display.Info().current_h
 clock = pygame.time.Clock()
 #feel free to edit the fps of your game
 fps = 60
+game = True
 
 
 class bone:
@@ -53,8 +54,13 @@ list = []
 list.append(str(ammount) + " arms")
 list.append(str(length) + "length")
 
-while True:
+while game:
     delta = clock.tick() / 1000
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            game = False
+            break
     
     mouse.lerp(v2(pygame.mouse.get_pos()[0], pygame.mouse.get_pos()[1]), 0.9)
     for i in arms:
@@ -72,3 +78,5 @@ while True:
     
     debug.frames(screen, clock, "black")
     pygame.display.flip()
+pygame.quit()
+exit()
