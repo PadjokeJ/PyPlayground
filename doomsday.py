@@ -20,7 +20,7 @@ doomsdays = [3, 28, 14, 4, 9, 6, 11, 8, 5, 10, 7, 12]
 leapdooms = [4, 29]
 
 def leap_year(y):
-    return (y % 4 == 0 and y % 100 != 0) or y % 400 == 0
+    return y % 100 and not y % 4 or not y % 400
 def length_of_month(m, y):
     d = 31
     if m == "February":
