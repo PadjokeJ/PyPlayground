@@ -21,20 +21,19 @@ leapdooms = [4, 29]
 
 def leap_year(y):
     return y % 100 and not y % 4 or not y % 400
+
 def length_of_month(m, y):
-    d = 31
     if m == "February":
-        d = 28
         if leap_year(y):
-            d = 29
+            return 29
+        return 28
     if m in short_months:
-        d = 30
-    return d
+        return 30
+    return 31
 
 def get_year():
     try:
-        year = int(input("year : "))
-        return year
+        return int(input("year : "))
     except:
         print("invalid year")
         return get_year()
