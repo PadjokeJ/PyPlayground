@@ -6,7 +6,7 @@ import os
 print("opening image")
 img = Image.open("image.png")
 print("choose image scale (0 - 1)")
-a = input("int:")
+a = input("Scale float (0-1):")
 i = float(a)
 print("compressing")
 size = img.size
