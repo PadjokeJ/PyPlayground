@@ -33,19 +33,9 @@ def clear():
     # for mac and linux(here, os.name is 'posix')
     else:
         _ = os.system('clear')
-#
-screen[10][10] = 1
-render(screen)
-
-while True:
-    screen = cls(screen)
-    
-    now = datetime.datetime.now()
-    s = now.time().second
-    dx = math.cos(math.pi * (-s/60 + .5) * 2) * 8
-    dy = math.sin(math.pi * (-s/60 + .5) * 2) * 8
-    
-    # bresenham
+        
+        
+def bresenham(s, dx, dy):
     x0, x1 = 10, 10 + int(dx)
     y0, y1 = 10, 10 + int(dy)
     
@@ -60,7 +50,7 @@ while True:
     error = dx + dy
     
     while True:
-        screen[x0][y0] = 1
+        s[x0][y0] = 1
         if x0 == x1 and y0 == y1:
             break
         e2 = 2 * error
@@ -74,10 +64,31 @@ while True:
                 break
             error += dx
             y0 += sy
+#
+screen[10][10] = 1
+render(screen)
+
+while True:
+    screen = cls(screen)
+    
+    now = datetime.datetime.now()
+    
+    s = now.time().second
+    dx = math.cos(math.pi * (-s/60 + .5) * 2) * 8
+    dy = math.sin(math.pi * (-s/60 + .5) * 2) * 8
+    bresenham(screen, dx, dy)
         
-        
+    m = now.time().minute
+    dx = math.cos(math.pi * (-m/60 + .5) * 2) * 6
+    dy = math.sin(math.pi * (-m/60 + .5) * 2) * 6
+    bresenham(screen, dx, dy)
+    
+    h = now.time().hour
+    dx = math.cos(math.pi * (-h/12 + .5) * 2) * 3
+    dy = math.sin(math.pi * (-h/12 + .5) * 2) * 3
+    bresenham(screen, dx, dy)
     
     sleep(1)
     clear()
     render(screen)
-    print(s)
+    print(f"{h}:{m}:{s}")
