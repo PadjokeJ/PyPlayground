@@ -74,21 +74,23 @@ while True:
     now = datetime.datetime.now()
     
     s = now.time().second
-    dx = math.cos(math.pi * (-s/60 + .5) * 2) * 8
-    dy = math.sin(math.pi * (-s/60 + .5) * 2) * 8
+    s = s / 60
+    dx = math.cos(math.pi * (-s + .5) * 2) * 8
+    dy = math.sin(math.pi * (-s + .5) * 2) * 8
     bresenham(screen, dx, dy)
         
     m = now.time().minute
-    dx = math.cos(math.pi * (-m/60 + .5) * 2) * 6
-    dy = math.sin(math.pi * (-m/60 + .5) * 2) * 6
+    m = (m + s) / 60
+    dx = math.cos(math.pi * (-m + .5) * 2) * 6
+    dy = math.sin(math.pi * (-m + .5) * 2) * 6
     bresenham(screen, dx, dy)
     
     h = now.time().hour
-    dx = math.cos(math.pi * (-h/12 + .5) * 2) * 3
-    dy = math.sin(math.pi * (-h/12 + .5) * 2) * 3
+    h = (h + m) / 12
+    dx = math.cos(math.pi * (-h + .5) * 2) * 4
+    dy = math.sin(math.pi * (-h + .5) * 2) * 4
     bresenham(screen, dx, dy)
     
     sleep(1)
     clear()
     render(screen)
-    print(f"{h}:{m}:{s}")
