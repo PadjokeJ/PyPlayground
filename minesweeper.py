@@ -1,9 +1,21 @@
+# IMPORTS
+from random import randint as ri
+from random import random as rf
 import pygame
-import math
-import random
-from physics import v2
-from fps import frames
+
+# CONSTANTS
+
+N_BOMBS = 5
+C_BOMBS = (18, 18, 25)
+FLAGS_C = (250, 100, 150)
+
+PROXIM = [(-1, 1), (0, 1), (1, 1),
+                     (-1, 0),            (1, 0),
+                     (-1, -1), (0, -1), (1, -1)]
+
 pygame.init()
+
+# VARS/VARIABLES
 
 scr = (width, height) = (0, 0)
 screen = pygame.display.set_mode((width, height))
@@ -14,239 +26,218 @@ clock = pygame.time.Clock()
 #feel free to edit the fps of your game
 fps = 60
 game = True
+win = False
 
-class Joystick:
-    pos = (0, 0)
-    finger = 0
-    def __init__(self):
-        print("new joystick")
-    def input(self, fingers):
-        pos = self.pos
-        if self.finger in fingers and len(fingers):
-            finger = fingers[self.finger]
-            input = (finger[0] - pos[0], finger[1] - pos[1])
-            # normalize
-            scale = input[0]**2 + input[1]**2
-            scale = math.sqrt(scale)
-            scale = max(0.001, scale)
-            mult = 1 / scale
-            input = (input[0] * mult, input[1] * mult)
+col = [0 for i in range(20)]
+board = [col.copy() for i in range(10)]
+uncovered = []
+flags = []
+
+flags_bg_width = width - 200
+flags_bg_height = height - 75
+flags_bg_start = 100
+flags_bg_end = flags_bg_start + flags_bg_width
+
+prev = False
+flags_ratio = 0
+
+# DEFS/DEFINITIONS
+
+def populate(board, n):
+    bombs = []
+    while len(bombs) != N_BOMBS:
+        x, y = ri(0, 9), ri(0, 19)
+        if board[x][y] != -1:
+            board[x][y] = -1
+            bombs.append((x, y))
+    return board, bombs
+
+def uncover_neighbors(board, uncovered, pos):
+    to_check = []
+    to_check.append(pos)
+    uncovered.append(pos)
+    while len(to_check) > 0:
+        print(f"Trying to expand to {to_check[0]}")
+        for i in PROXIM:
+            x = i[0] + to_check[0][0]
+            y = i[1] + to_check[0][1]
+            if (x >= 0) and (y >= 0):
+                try:
+                    if board[x][y] == 0 and not((x, y) in uncovered):
+                        uncovered.append((x, y))
+                        to_check.append((x, y))
+                    elif board[x][y] != -1:
+                        uncovered.append((x, y))
+                except:
+                    pass
+        to_check.pop(0)
+    return uncovered
             
-            return input
-        else:
-            if len(fingers) == 0:
-                return (0, 0)
-            min_dist = 999
-            for key in fingers:
-                x, y = fingers[key]
-                dx = x - pos[0]
-                dy = y - pos[1]
-                if math.sqrt(dx**2 + dy**2) < min_dist:
-                    finger = key
-                    min_dist = math.sqrt(dx**2 + dy**2)
-            try:
-                self.finger = finger
-            except:
-                self.finger = 0
-            return (0, 0)
-    def render(self, surface, color, size):
-        pos = self.pos
-        pygame.draw.circle(surface, color, pos, size, 20)
-                
+def fcolor(board, col, p):
+    return (255 - 10* board[col][p], max(40, int(255 - 15* board[col][p] ** 2)), max(40, int(255 - 15* board[col][p] ** 2)))
 
-class Player:
-    pos = (0, 0)
-    vel = (0, 0)
-    def __init__(self):
-        print("new player")
-    def move(self, tuple, speed):
-        x, y = self.pos
-        if x > width:
-            x = 0
-        if x < 0:
-            x = width
-        if y > height:
-            y = 0
-        if y < 0:
-            y = height
-        dx, dy = self.vel
-        dx += tuple[0] * speed
-        dy += tuple[1] * speed
-        self.vel = (dx * 0.99, dy * 0.99)
-        self.pos = (x + dx, y + dy)
-    def render(self, surface):
-        pygame.draw.circle(surface, "red2", self.pos, 20)
+def render_solution(screen, board):
+    for col in range(len(board)):
+        for p in range(len(board[col])):
+            clr = fcolor(board, col, p)
+            if board[col][p] == -1:
+                clr = C_BOMBS
+            pygame.draw.circle(screen, clr, (col * 100 + 100, p * 100 + 100), 40)
 
-def random_pos():
-    return v2(random.randint(0, 1) * width, random.randint(0, 1) * height)
+def render(screen, board, uncovered):
+    for col in range(len(board)):
+        for p in range(len(board[col])):
+            pos =  (col * 100 + 100, p * 100 + 100)
+            if (col, p) in uncovered:
+                clr = fcolor(board, col, p)
+                if board[col][p] == -1:
+                    clr = C_BOMBS
+                pygame.draw.circle(screen, clr, pos, 40)
+            else:
+                pygame.draw.circle(screen, (250, 250, 250), pos, 40)
+            if (col, p) in flags:
+                pygame.draw.circle(screen, FLAGS_C, pos, 30)
 
-class Asteroid:
-    def __init__(self, dir, speed):
-        self.dir = dir.scale(speed)
-        self.speed = speed
-        self.size = random.randint(50, 100)
-        self.pos = random_pos()
-    def move(self):
-        self.pos.add(self.dir)
-        if self.pos.x > width + self.size:
-            self.pos.x = 0
-        if self.pos.x < -self.size:
-            self.pos.x = width
-        if self.pos.y > height + self.size:
-            self.pos.y = 0
-        if self.pos.y < -self.size:
-            self.pos.y = height
-    def render1(self, surface):
-        pygame.draw.circle(surface, "gray30", self.pos.tuple(), self.size)
-    def render2(self, surface):
-        pygame.draw.circle(surface, "gray20", self.pos.tuple(), self.size - 20)
+# INITIALIZE BOMBS
 
+board, bombs = populate(board, N_BOMBS)
+print(f"Number of bombs: {len(bombs)}")
 
+for bomb in bombs:
+    for j in PROXIM:
+        try:
+            if board[bomb[0] + j[0]][bomb[1] + j[1]] != -1 and bomb[0] + j[0] >= 0 and bomb[1] + j[1] >= 0:
+                board[bomb[0] + j[0]][bomb[1] + j[1]] += 1
+        except:
+            pass
 
-fingers = {}
-
-move = Joystick()
-move.pos = (width // 2, height - 200)
-player = Player()
-player.pos = (width//2, height//2)
-
-particles = []
-asteroids = []
-ticker = 0
-max_tick = 80
-
-score = 0
-score_font = pygame.font.SysFont(None, 60)
-
-max_fuel = 600
-fuel = max_fuel
+# MAIN
 
 while game:
     clock.tick(fps)
-    screen.fill("black")
+    screen.fill("white")
     
-    for event in pygame.event.get():
-        if event.type == pygame.FINGERDOWN:
-            fingers[str(event.finger_id)] = (event.x * width, event.y * height)
-        if event.type == pygame.FINGERMOTION:
-            fingers[str(event.finger_id)] = (event.x * width, event.y * height)
-        if event.type == pygame.FINGERUP:
-            del fingers[str(event.finger_id)]
+    render(screen, board, uncovered)
     
-    inp = move.input(fingers)
-        
-    if inp[0] + inp[1] != 0:
-        x, y = inp
-        rand = (random.randint(0, 10) / 10 - 0.5, random.randint(0, 10) / 10 - 0.5)
-        particles.append([player.pos, (-x * 5 + rand[0] + player.vel[0] * 1, -y * 5 + rand[1] + player.vel[1] * 1), 10 + random.randint(0, 100) / 10 - 0.5])
-    iter = len(particles) - 1
-    
-    
-    
-    for i in reversed(particles):
-        i[0] = (i[1][0] + i[0][0], i[1][1] + i[0][1])
-        i[2] -= 0.2
-        pygame.draw.circle(screen, "white", i[0], int(i[2]))
-        if i[2] < 0:
-            particles.pop(iter)
-        iter -= 1
-    for i in reversed(particles):
-        pygame.draw.circle(screen, "gray", i[0], int(i[2])-4)
-    
-    ticker += 1
-    
-    if ticker > max_tick:
-        max_tick -= 1
-        ticker = 0
-        score += 1
-        asteroids.append(Asteroid(v2(random.randint(-100, 100), random.randint(-100, 100)).normalize(), random.randint(1, 7)))
-    
-    playerpos = v2().from_tuple(player.pos)
-    for ast in asteroids:
-        ast.move()
-        if ast.pos.distance(playerpos) < ast.size + 20:
-            game = False
-        ast.render1(screen)
-    
-    for ast in asteroids:
-        ast.render2(screen)
-    
-    
-    player.move(inp, 0.2)
-    
-    player.render(screen)
-    
-    
-    #-----# UI #-----#
-    
-    move.render(screen, "white", 150)
-    
-    frames(screen, clock, "white")
-    _score = score_font.render(str(score), 1, "white")
-    score_pos = _score.get_rect().center
-    screen.blit(_score, (width//2 - score_pos[0], 0))
-    
-    for i in fingers:
-        pygame.draw.circle(screen, "white", fingers[i], 100, 5)
-        
-    pygame.display.flip()
-i = 0
-particles.clear()
-_particles = []
-ticker = 0
-max_tick = 5
-death = False
-spaceship = True
-while not death:
-    screen.fill("black")
-    clock.tick(60)
-    ticker += 1
-    if ticker > max_tick:
-        ticker = 0
+    if pygame.mouse.get_pressed(3)[0] and not prev:
+        prev = True
+        pos = pygame.mouse.get_pos()
+        posx = round((pos[0] - 100) / 100)
+        posy = round((pos[1] - 100) / 100)
         try:
-            pos = v2().copy(asteroids[0].pos)
-            print(pos)
-            _particles.append([v2().from_tuple(player.pos), v2(random.randint(-100, 100), random.randint(-100, 100)).normalize().scale(random.randint(1, 60) / 10), random.randint(50, 250)/10, 0.5])
-            for i in range(60):
-                particles.append([v2().copy(pos), v2(random.randint(-100, 100), random.randint(-100, 100)).normalize().scale(random.randint(10, 200) / 10), random.randint(250, 500)/10, 1])
-            asteroids.pop(0)
+            if board[posx][posy] == 0:
+                uncovered = uncover_neighbors(board, uncovered, (posx, posy))
+            else:
+                if (posx, posy) in flags:
+                    uncovered.append((posx, posy))
+                    flags.remove((posx, posy))
+                    if (posx, posy) in bombs:
+                        game = False
+                else:
+                    flags.append((posx, posy))
         except:
-            if spaceship:
-                spaceship = False
-                max_tick = 60
-                for i in range(60):
-                    _particles.append([v2().from_tuple(player.pos), v2(random.randint(-100, 100), random.randint(-100, 100)).normalize().scale(random.randint(1, 60) / 10), random.randint(100, 250)/10, 0.5])
-            if len(particles) == 0:
-                death = True
+            pass
+    if not pygame.mouse.get_pressed(3)[0]:
+        prev = False
     
-    for ast in asteroids:
-        ast.render1(screen)
-    for ast in asteroids:
-        ast.render2(screen)
+    flags_ratio = (len(flags)/N_BOMBS + flags_ratio * 5) / 6
     
-    for part in reversed(particles):
-        part[0].add(part[1])
-        part[1].scale(0.95)
-        part[2] -= part[3]
-        pygame.draw.circle(screen, "gray20", part[0].tuple(), int(part[2]))
-        if part[2] < 0:
-            particles.remove(part)
-    for part in particles:
-        pygame.draw.circle(screen, "gray30", part[0].tuple(), int(part[2]) - 5)
+    # Render flag progress
+    pygame.draw.line(screen, (200, 200, 200), (flags_bg_start, flags_bg_height), (flags_bg_end, flags_bg_height), 10)
+    pygame.draw.circle(screen, (200, 200, 200), (flags_bg_start, flags_bg_height +1), 5)
+    pygame.draw.circle(screen, (200, 200, 200), (flags_bg_end, flags_bg_height +1), 5)
+    pygame.draw.line(screen, FLAGS_C, (flags_bg_start, flags_bg_height), (flags_bg_start + int(flags_bg_width * flags_ratio), flags_bg_height), 10)
+    pygame.draw.circle(screen, FLAGS_C, (flags_bg_start, flags_bg_height +1), 5)
+    pygame.draw.circle(screen, FLAGS_C, (flags_bg_start + int(flags_bg_width * flags_ratio), flags_bg_height +1), 5)
     
-    for part in reversed(_particles):
-        part[0].add(part[1])
-        part[1].scale(0.95)
-        part[2] -= part[3]
-        pygame.draw.circle(screen, "red4", part[0].tuple(), int(part[2]))
-        if part[2] < 0:
-            _particles.remove(part)
-    for part in _particles:
-        pygame.draw.circle(screen, "red", part[0].tuple(), int(part[2]) - 5)
-        
-    
-    if spaceship:
-        player.render(screen)
-    screen.blit(_score, (width//2 - score_pos[0], 0))
-    frames(screen, clock, "white")
+    # win condition
+    if len(flags) == N_BOMBS:
+        win = True
+        for i in flags:
+            if not i in bombs:
+                win = False
+                break
+        if not win:
+            flags.clear()
+        else:
+            game = False
     pygame.display.flip()
+
+c = 0
+mx = 20
+i = 0
+particles = []
+x = 0
+y = 1
+
+# LOSE
+
+while not win:
+   screen.fill("white")
+   clock.tick(fps)
+   
+   render(screen, board, uncovered)
+   
+   c += 1
+   if c > mx:
+       try:
+           c = 0
+           uncovered.append(bombs[i])
+           for j in range(20):
+               ls = [(bombs[i][x] * 100 + 100, bombs[i][y] * 100 + 100), 20, (20 * (rf() - 0.5), 20 * (rf() - 0.5))]
+               particles.append(ls)
+           i += 1
+       except:
+           c = -1000
+   
+   for p in reversed(particles):
+       pygame.draw.circle(screen, (200, 100, 120), p[0], p[1])
+       p[0] = (p[0][x] + p[2][x], p[0][y] + p[2][y])
+       p[1] = p[1] - 0.75
+       if p[1] <= 0:
+           particles.remove(p)
+   pygame.display.flip()
+   if c == -900:
+       break
+
+n_flags = len(flags)
+
+while win:
+   screen.fill("white")
+   render(screen, board, uncovered)
+   clock.tick(fps)
+   
+   c+=1
+   if c > mx:
+       try:
+           c = 0
+           uncovered.append(flags[i])
+           ls = [(bombs[i][x] * 100 + 100, bombs[i][y] * 100 + 100), 0]
+           particles.append(ls)
+           flags[i] = (-5, -5)
+           i += 1
+           n_flags -= 1
+       except:
+           c = -1000
+   
+   for p in particles:
+       if p[1] < 50:
+           p[1] += abs(50 - p[1]) * 0.2
+       pygame.draw.circle(screen, (125, 200, 150), p[0], p[1])
+   
+   flags_ratio = (n_flags/N_BOMBS + 5 * flags_ratio) / 6
+    
+   pygame.draw.line(screen, (200, 200, 200), (flags_bg_start, flags_bg_height), (flags_bg_end, flags_bg_height), 10)
+   pygame.draw.circle(screen, (200, 200, 200), (flags_bg_start, flags_bg_height +1), 5)
+   pygame.draw.circle(screen, (200, 200, 200), (flags_bg_end, flags_bg_height +1), 5)
+   pygame.draw.line(screen, FLAGS_C, (flags_bg_start, flags_bg_height), (flags_bg_start + int(flags_bg_width * flags_ratio), flags_bg_height), 10)
+   pygame.draw.circle(screen, FLAGS_C, (flags_bg_start, flags_bg_height +1), 5)
+   pygame.draw.circle(screen, FLAGS_C, (flags_bg_start + int(flags_bg_width * flags_ratio), flags_bg_height +1), 5)
+    
+   
+   
+   if c == -900:
+       win = False
+       break
+   
+   pygame.display.flip()
