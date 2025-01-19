@@ -43,6 +43,11 @@ flags_ratio = 0
 
 # DEFS/DEFINITIONS
 
+def get_events():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            exit()
+
 def populate(board, n):
     bombs = []
     while len(bombs) != N_BOMBS:
@@ -118,6 +123,7 @@ while game:
     screen.fill("white")
     
     render(screen, board, uncovered)
+    get_events()
     
     if pygame.mouse.get_pressed(3)[0] and not prev:
         prev = True
@@ -133,7 +139,7 @@ while game:
                     flags.remove((posx, posy))
                     if (posx, posy) in bombs:
                         game = False
-                else:
+                elif not (posx, posy) in uncovered:
                     flags.append((posx, posy))
         except:
             pass
@@ -170,13 +176,14 @@ particles = []
 x = 0
 y = 1
 
-# LOSE
+# LOSE ANIMATION
 
 while not win:
    screen.fill("white")
    clock.tick(fps)
    
    render(screen, board, uncovered)
+   get_events()
    
    c += 1
    if c > mx:
@@ -202,10 +209,13 @@ while not win:
 
 n_flags = len(flags)
 
+# WIN ANIMATION
+
 while win:
    screen.fill("white")
    render(screen, board, uncovered)
    clock.tick(fps)
+   get_events()
    
    c+=1
    if c > mx:
