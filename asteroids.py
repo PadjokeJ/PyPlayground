@@ -132,6 +132,9 @@ while game:
             fingers[str(event.finger_id)] = (event.x * width, event.y * height)
         if event.type == pygame.FINGERUP:
             del fingers[str(event.finger_id)]
+        if event.type == pygame.QUIT:
+            game = False
+            exit()
     
     inp = move.input(fingers)
         
