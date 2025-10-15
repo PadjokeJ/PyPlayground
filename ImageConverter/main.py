@@ -218,8 +218,8 @@ def ascii(img):
         for x in range(width):
             i += 1
             p = pixels[x, row]
-            print(lis[int(p//25)], end = "")
-            txt += lis[int(p//25)]
+            print(lis[int(p//29)], end = "")
+            txt += lis[int(p//29)]
         
         f.write(txt + "\n")
     f.close()
